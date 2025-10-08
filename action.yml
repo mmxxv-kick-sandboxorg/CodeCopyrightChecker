@@ -65,8 +65,8 @@ runs:
     - name: "5. build container image, and push"
       uses: docker/build-push-action@v5
       with:
-        context: ${{ github.action_path }}
-        # context: .
+        # context: ${{ github.action_path }}
+        context: .
         # user側のrepoに配置する場合は . とする
         # file: ./docker/Dockerfile
         file: ${{ github.action_path }}/docker/Dockerfile
