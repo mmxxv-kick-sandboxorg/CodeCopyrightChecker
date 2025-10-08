@@ -46,7 +46,7 @@ runs:
         registry: ghcr.io
         username: ${{ github.actor }}
         # password: ${{ secrets.CR_PAT }}
-        password: ${{ secrets.GH_TOKEN }}
+        password: ${{ inputs.GH_TOKEN }}
 
     - name: "4. generate metadata"
       id: meta
@@ -75,7 +75,7 @@ runs:
     - name: "6. run gitDiffCheck.py with PR number"
       run: |
          docker run --rm \
-           -e GITHUB_TOKEN=${{ secrets.GH_TOKEN }} \
+           -e GITHUB_TOKEN=${{ inputs.GH_TOKEN }} \
            -e AACS=${{ secrets.AACS }} \
            -e AACSAPIkey=${{ secrets.AACSAPIKEY }} \
            -e HUGGINGFACE_TOKEN=${{ secrets.HUGGINGFACE_TOKEN }} \
