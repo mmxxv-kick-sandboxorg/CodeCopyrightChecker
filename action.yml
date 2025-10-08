@@ -100,7 +100,7 @@ runs:
            -v ${{ github.workspace }}:/app \
            -w /app \
            ghcr.io/${{ github.repository_owner }}/ghcr-container-push-demo:latest \
-           bash -c "git config --global --add safe.directory /app && python3 app/gitDiffCheck.py ${{ inputs.pr_number }}"
+           bash -c "git config --global --add safe.directory /app && python3 gitDiffCheck.py ${{ inputs.pr_number }}"
 
     # Python スクリプトを PR 番号付きで実行
     #- name: Run Python script with PR number
