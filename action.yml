@@ -60,8 +60,12 @@ runs:
     - name: "5. build container image, and push"
       uses: docker/build-push-action@v5
       with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.GH_TOKEN }}
+        # context: .
+        # org側ではなく user側のrepoに配置が必要
         # file: ./docker/Dockerfile
-        context: .
         file: ${{ github.action_path }}/docker/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
