@@ -72,10 +72,10 @@ runs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        #cache-from: type=registry,ref=ghcr.io/${{ github.actor }}/ghcr-container-push-demo:buildcache
-        #cache-to: type=registry,ref=ghcr.io/${{ github.actor }}/ghcr-container-push-demo:buildcache,mode=max
-        cache-from: type=registry,ref=ghcr.io/CodeCopyrightChecker/ghcr-ccc-container:buildcache
-        cache-to: type=registry,ref=ghcr.io/CodeCopyrightChecker/ghcr-ccc-container:buildcache,mode=max
+        cache-from: type=registry,ref=ghcr.io/${{ github.actor }}/ghcr-ccc-container:buildcache
+        cache-to: type=registry,ref=ghcr.io/${{ github.actor }}/ghcr-ccc-container:buildcache,mode=max
+        #cache-from: type=registry,ref=ghcr.io/CodeCopyrightChecker/ghcr-ccc-container:buildcache
+        #cache-to: type=registry,ref=ghcr.io/CodeCopyrightChecker/ghcr-ccc-container:buildcache,mode=max
 
     # 依存ライブラリをインストール
     #- name: Install dependencies
