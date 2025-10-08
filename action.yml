@@ -23,6 +23,10 @@ inputs:
     description: 'Azure Content Safety API key'
     required: true
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 runs:
   using: "composite" 
   steps:
@@ -52,7 +56,8 @@ runs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ghcr.io/${{ github.actor }}/ghcr-container-push-demo
+        # images: ghcr.io/${{ github.actor }}/ghcr-container-push-demo
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
           type=raw,value=latest
           type=sha,prefix=,suffix=,format=short
