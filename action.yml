@@ -45,7 +45,8 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        password: ${{ secrets.CR_PAT }}
+        # password: ${{ secrets.CR_PAT }}
+        password: ${{ secrets.GH_TOKEN }}
 
     - name: "4. generate metadata"
       id: meta
