@@ -76,13 +76,13 @@ runs:
       run: |
          docker run --rm \
            -e GITHUB_TOKEN=${{ inputs.GH_TOKEN }} \
-           -e AACS=${{ secrets.AACS }} \
-           -e AACSAPIkey=${{ secrets.AACSAPIKEY }} \
-           -e HUGGINGFACE_TOKEN=${{ secrets.HUGGINGFACE_TOKEN }} \
+           -e AACS=${{ inputs.AACS }} \
+           -e AACSAPIkey=${{ inputs.AACSAPIKEY }} \
+           -e HUGGINGFACE_TOKEN=${{ inputs.HUGGINGFACE_TOKEN }} \
            -v ${{ github.workspace }}:/app \
            -w /app \
            ghcr.io/${{ github.actor }}/ghcr-container-push-demo:latest \
-           bash -c "git config --global --add safe.directory /app && python gitDiffCheck.py ${{ github.event.pull_request.number }}"
+           bash -c "git config --global --add safe.directory /app && python gitDiffCheck.py ${{ inputs.pr_number }}"
 
     # Python スクリプトを PR 番号付きで実行
     #- name: Run Python script with PR number
