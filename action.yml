@@ -63,15 +63,17 @@ runs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ inputs.GH_TOKEN }}
-        # context: .
+        context: .
         # org側ではなく user側のrepoに配置が必要
         # file: ./docker/Dockerfile
         file: ${{ github.action_path }}/docker/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=registry,ref=ghcr.io/${{ github.actor }}/ghcr-container-push-demo:buildcache
-        cache-to: type=registry,ref=ghcr.io/${{ github.actor }}/ghcr-container-push-demo:buildcache,mode=max
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        # cache-from: type=registry,ref=ghcr.io/${{ github.actor }}/ghcr-container-push-demo:buildcache
+        # cache-to: type=registry,ref=ghcr.io/${{ github.actor }}/ghcr-container-push-demo:buildcache,mode=max
 
     # 依存ライブラリをインストール
     #- name: Install dependencies
