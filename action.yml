@@ -75,7 +75,7 @@ runs:
     - name: "6. run gitDiffCheck.py with PR number"
       run: |
          docker run --rm \
-           -e GITHUB_TOKEN=${{ secrets.CR_PAT }} \
+           -e GITHUB_TOKEN=${{ secrets.GH_TOKEN }} \
            -e AACS=${{ secrets.AACS }} \
            -e AACSAPIkey=${{ secrets.AACSAPIKEY }} \
            -e HUGGINGFACE_TOKEN=${{ secrets.HUGGINGFACE_TOKEN }} \
