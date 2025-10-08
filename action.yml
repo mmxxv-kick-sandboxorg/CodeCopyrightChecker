@@ -56,7 +56,7 @@ runs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ghcr.io/${{ github.actor }}/ghcr-container-push-demo
+        images: ghcr.io/${{ github.repository_owner }}/ghcr-container-push-demo
         # images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
           type=raw,value=latest
@@ -72,8 +72,8 @@ runs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=registry,ref=ghcr.io/${{ github.actor }}/ghcr-ccc-container:buildcache
-        cache-to: type=registry,ref=ghcr.io/${{ github.actor }}/ghcr-ccc-container:buildcache,mode=max
+        cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/ghcr-ccc-container:buildcache
+        cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/ghcr-ccc-container:buildcache,mode=max
         #cache-from: type=registry,ref=ghcr.io/CodeCopyrightChecker/ghcr-ccc-container:buildcache
         #cache-to: type=registry,ref=ghcr.io/CodeCopyrightChecker/ghcr-ccc-container:buildcache,mode=max
 
@@ -98,7 +98,7 @@ runs:
            -e HUGGINGFACE_TOKEN=${{ inputs.HUGGINGFACE_TOKEN }} \
            -v ${{ github.workspace }}:/app \
            -w /app \
-           ghcr.io/${{ github.actor }}/ghcr-container-push-demo:latest \
+           ghcr.io/${{ github.repository_owner }}/ghcr-container-push-demo:latest \
            bash -c "git config --global --add safe.directory /app && python gitDiffCheck.py ${{ inputs.pr_number }}"
 
     # Python スクリプトを PR 番号付きで実行
