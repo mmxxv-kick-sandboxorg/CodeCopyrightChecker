@@ -13,9 +13,10 @@ RUN pip3 install --no-cache-dir transformers torch accelerate
 WORKDIR /app
 
 # copy check script to container
-COPY scripts/gitDiffCheck.py /app/gitDiffCheck.py
+COPY gitDiffCheck.py /app/gitDiffCheck.py
 
 CMD ["python3", "gitDiffCheck.py"]
+
 
 
 
