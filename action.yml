@@ -73,7 +73,14 @@ runs:
     #  run: pip install --prefer-binary --use-feature=fast-deps -r ${{ github.action_path }}/requirements.txt
 
     - name: "6. run gitDiffCheck.py with PR number"
-      run: |
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.GH_TOKEN }}
+        HUGGINGFACE_TOKEN: ${{ inputs.HUGGINGFACE_TOKEN }}
+        AACS: ${{ inputs.AACS }}
+        AACSAPIkey: ${{ inputs.AACSAPIkey }}
+        PYTHONIOENCODING: utf-8
+    run: |
          docker run --rm \
            -e GITHUB_TOKEN=${{ inputs.GH_TOKEN }} \
            -e AACS=${{ inputs.AACS }} \
