@@ -6,6 +6,11 @@ RUN apt-get update && apt-get install -y \
     python3 python3-pip git curl gh && \
     rm -rf /var/lib/apt/lists/*
 
+# Configure git for better network handling
+RUN git config --global http.postBuffer 1048576000 && \
+    git config --global http.maxRequestBuffer 100M && \
+    git config --global core.preloadindex true
+
 # copy requirements first for better caching
 COPY requirements.txt /app/requirements.txt
 
@@ -20,5 +25,6 @@ WORKDIR /app
 COPY scripts/gitDiffCheck.py /app/gitDiffCheck.py
 
 CMD ["python3", "gitDiffCheck.py"]
+
 
 
