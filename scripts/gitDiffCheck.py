@@ -528,36 +528,36 @@ def main(args):
             if callGitHubCLIcomment(pullId, comment):
                 print('  Comment added to Pull-request ID', pullId)
             
-            # 差分のコードスニペットとAPIが返したsourceUrlsのコードが一致する部分を抽出
-            originUri = item['sourceUrls'][0]  # 複数ある場合は最初の1件のみ対象
+            # 58 BEGIN
+            testSnippet = '\n'.join(dataset)  # Code snippet of the diff
 
-            testSnippet = '\n'.join(dataset)  # 差分のコードスニペット
-            # rawtUriをoriginUriに変換
-            # 通常のGitHubのRAW形式URIと、Azure APIの結果に含まれるURIは異なるため、変換する
-            targetUri = originUri.replace("github.com/", "raw.githubusercontent.com/").replace("/tree/", "/").replace("%2F", "/")
+            matchCode = None
+            for originUri in item['sourceUrls']:
+                # Convert originUri to rawUri
+                targetUri = originUri.replace("github.com/", "raw.githubusercontent.com/").replace("/tree/", "/").replace("%2F", "/")
 
-            # matchCode = (matchSnippetCode(targetUri, testSnippet))
-            # ToDo
-            stline, edline, matchCode = (matchSnippetCode(targetUri, testSnippet))
-            # itemに'matchSnippet'キーを追加
-            if matchCode is None:
-                item.update(
-                {
-                        "matchSnippet": []
-                    }
-                )
-            elif matchCode == []:
-                item.update(
-                    {
-                        "matchSnippet": []
-                    }
-                )
+                result = matchSnippetCode(targetUri, testSnippet)
+
+                # If 404 occurs, matchSnippetCode returns an empty string "", so skip to the next URL
+                if result == "":
+                    continue
+
+                # If result is None or an empty list, also skip to the next URL
+                if result is None or result == []:
+                    continue
+
+                # Otherwise, result is expected to be a tuple (stline, edline, matchCode)
+                stline, edline, matchCode = result
+                if matchCode:
+                    # If a match is found, break the loop
+                    break
+
+            # If matchCode is None or an empty list, set matchSnippet to an empty list
+            if matchCode is None or matchCode == []:
+                item.update({"matchSnippet": []})
             else:
-                item.update(
-                    {
-                        "matchSnippet": matchCode["match"]
-                }
-            )
+                item.update({"matchSnippet": matchCode["match"]})
+            # 58 END
 
         else:
             # チェック結果が false
