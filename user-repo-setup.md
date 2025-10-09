@@ -2,6 +2,9 @@
 
 このドキュメントでは、組織のCodeCopyrightCheckerアクションを使用するために、ユーザーリポジトリに必要な設定を行う手順を説明します。
 
+## 著作権表示
+Unpublished Copyright (c) 2025 NTT, Inc. All rights reserved.
+
 ## 前提条件
 
 - 組織側でCodeCopyrightCheckerリポジトリが既にセットアップされていること
@@ -29,49 +32,23 @@ your-repo/
 ```
 
 ### 2.2 checkinfringement.yml の作成
-`.github/workflows/checkinfringement.yml` ファイルを作成し、以下の内容を記述：
-
-```yaml
-# .github/workflows/checkinfringement.yml
-name: Run CodeCopyrightInfringementCheck on PR
-
-# PR 作成・更新時に発火して、composite action を呼び出す
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-
-permissions:
-  contents: read
-  pull-requests: write   # PRにコメントするために必要
-  issues: write          # issueコメントを使う場合に必要
-  packages: write        # GHCR への push に必要
-
-jobs:
-  copyright-check:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run copyright check
-        uses: YOUR_ORG_NAME/CodeCopyrightChecker@main  # 組織名を実際の名前に変更
-        with:
-          pr_number: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
-          AACS: ${{ secrets.AACS }}
-          AACSAPIkey: ${{ secrets.AACSAPIkey }}
-```
+`.github/workflows/checkinfringement.yml` ファイルを新規に作成し、資材の checkinfringement.yml の内容を設定
 
 **注意**: `YOUR_ORG_NAME` を実際の組織名に変更してください。
 
 ## 3. Secrets の設定
 
 ### 3.1 Personal Access Token (PAT) の作成
-1. GitHub の **Settings** > **Developer settings** > **Personal access tokens** > **Fine-grained tokens** に移動
-2. **Generate new token** をクリック
+1. GitHub の **Settings** > **Developer settings** > **Personal access tokens** > **tokens(classic)** に移動
+2. **Generate new token(classic)** をクリック
 3. 以下の権限を設定：
-   - `contents:read`
-   - `packages:write`
-   - `packages:read`
-   - `pull-requests:write`
+  Select scopes では下記にチェックを入れる
+    - repo
+    - write:packages
+    - read:packages
+    - delete:packages
+    - read:org
+
 4. トークンを生成し、安全な場所に保存
 
 ### 3.2 リポジトリSecrets の設定
@@ -81,20 +58,8 @@ jobs:
 |---------|------|----------|
 | `GH_TOKEN` | GitHub Personal Access Token | 上記で作成したPAT |
 | `HUGGINGFACE_TOKEN` | HuggingFace APIトークン | [HuggingFace Settings](https://huggingface.co/settings/tokens)で作成 |
-| `AACS` | Azure Content Safety エンドポイントURL | Azure portalから取得 |
+| `AACS` | Azure Content Safety エンドポイントURL | Azure portalから取得した文字列 + "/contentsafety/text:detectProtectedMaterialForCode?api-version=2024-09-15-preview" |
 | `AACSAPIkey` | Azure Content Safety APIキー | Azure portalから取得 |
-
-### 3.3 各Secretの取得方法詳細
-
-#### HuggingFace Token
-1. [HuggingFace](https://huggingface.co/) にログイン
-2. **Settings** > **Access Tokens** に移動
-3. **New token** をクリックして作成
-
-#### Azure Content Safety
-1. [Azure Portal](https://portal.azure.com/) にログイン
-2. **Content Safety** サービスを作成
-3. **Keys and Endpoint** からエンドポイントURLとAPIキーを取得
 
 ## 4. テスト実行
 
@@ -108,7 +73,7 @@ jobs:
 - **Actions** タブでワークフローの実行状況を確認
 - エラーが発生した場合は、Secretsの設定とワークフローファイルの内容を再確認
 
-## 5. トラブルシューting
+## 5. トラブルシューティング
 
 ### よくある問題と解決方法
 
@@ -126,18 +91,7 @@ jobs:
 
 ## 6. カスタマイズ
 
-### 6.1 実行タイミングの変更
-プルリクエスト以外のタイミングで実行したい場合は、`on:` セクションを修正：
-
-```yaml
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    types: [opened, synchronize, reopened]
-```
-
-### 6.2 実行条件の追加
+### 6.1 実行条件の追加
 特定のファイルが変更された場合のみ実行したい場合：
 
 ```yaml
