@@ -228,16 +228,6 @@ def callAzureCLI(data):
     payload = {
         "code": data
     }
-    #print('------')
-    #print('Code:', payload)
-    #print('------')
-
-    # Azure APIを呼び出さず折り返しのローカルテストを行う場合、下記行のコメントを外す
-    # dummy = '{"protectedMaterialAnalysis":{"detected":false,"codeCitations":[]}}'
-    # dummy = '{"protectedMaterialAnalysis":{"detected":true,"codeCitations":[{"license":"Apache_2_0","sourceUrls":["https://github.com/laboroai/LaboroTVSpeech/tree/d2e8edb309f5c2a75165e38f391dafc4564a088b/kaldi%2Flaborotv_csj%2Fs5%2Frun.sh","https://github.com/laboroai/LaboroTVSpeech/tree/d2e8edb309f5c2a75165e38f391dafc4564a088b/kaldi%2Flaborotv%2Fs5%2Frun.sh"]},{"license":"NOASSERTION","sourceUrls":["https://github.com/NCTUMLlab/Shen-Chen/tree/39d60e39decf8a72b41a599c22d376c60244476c/egs%2Fcsj%2Fs5%2Frun.sh","https://github.com/chagge/kaldi/tree/02948e89e4afd715889999e5ac52dc889ca2572e/egs%2Fswbd%2Fs5%2Frun_edin.sh","https://github.com/kamikennn/Kaldi_for_JSUT/tree/255a208ac4025715424dd9d8dd30f045de8223b4/run.sh","https://github.com/mnjagtap/Kaldi-branch/tree/b4780574cf18f29fb9851826d0645370e08d6121/egs%2Fswbd%2Fs5c%2Frun.sh"]}]}}'
-    # dummy = '{"protectedMaterialAnalysis":{"detected":true,"codeCitations":[{"license":"NOASSERTION","sourceUrls":["https://github.com/ishikawalab/imtoolkit/tree/e0b2d06fe734d7084644c1357ba68bd9cf79a309/imtoolkit%2FBasis.py"]}]}}'
-    # dummy = '{"error":{"code":"InvalidRequestBody","message":"Deserialize failed: code must be more than 110 characters. Please follow the contract provisions. | Request Id: 77fdc060-d6ef-4eb4-822c-80a5430ffb58, Timestamp: 2025-08-27T08:16:17Z.","details":[]}}'
-    # return dummy
 
     # POSTリクエストを送信
     # HTTP例外をキャッチした場合はexcept節で処理
@@ -257,11 +247,6 @@ def callAzureCLI(data):
     elif response.status_code == 400:
         # response.textをJSONとして解析して、エラーメッセージを抽出
         response_json = response.json()
-        # 400 Bad Requestの例
-        # {"error":{"code":"InvalidRequestBody",
-        # "message":"Deserialize failed: code must be more than 110 characters. Please follow the contract provisions. ",
-        # "details":[]}}
-        # response_json['error']['code'] が 'InvalidRequestBody' の場合、messageを表示
         if 'error' in response_json and 'message' in response_json['error'] and response_json['error']['code'] == 'InvalidRequestBody':
             error_message = response_json['error']['message']
             print('Bad Request :', error_message)
@@ -286,9 +271,6 @@ def callGitHubCLIcomment(prNumber, comment):
     """
     # GitHub CLIの呼び出し
     # gh pr comment <プルリクエスト番号> --body "<コメント本文>"
-    # comment の両端をシングルクォーテーションで囲む
-    # comment = "'"+ comment + "'"
-    #strCmd = 'gh pr comment ' + prNumber + ' --body "' + comment + '"'
     strCmd = ['gh', 'pr', 'comment', prNumber, '--body', '"' + comment + '"']
     print('Command:', strCmd)
     try:
@@ -322,29 +304,8 @@ def matchSnippetCode(fileUri, diffBody):
         # URIからテキストを取得
         with urllib.request.urlopen(fileUri) as response:
             remote_text = response.read().decode('utf-8')
-        # pr 9で比較用のテストデータ
-        #remote_text = """def constructUnitaryFromE1(E1):
-    #U[:, 0: T] = E1
 
-    #W = getDFTMatrix(M)
-    #for k in range(1, int(M / T)):
-    #    v = W[:, (k * T): ((k + 1) * T)]
-    #    msum = np.eye(M, dtype=complex)
-    #    for i in range(k):
-    #        E = U[:, (i * T): ((i + 1) * T)]
-    #        msum -= np.matmul(E, E.T.conj())
-
-    #    newE = np.matmul(msum, v)
-    #    newE *= np.sqrt(T) / np.linalg.norm(newE)
-    #    U[:, (k * T): ((k + 1) * T)] = newE
-
-    #return U
-    #"""
-        # 行単位に分割して、difflibモジュールのDifferクラスで比較する
-        # fileLines = open(fileUri, 'r', encoding='utf-8')
         diff = difflib.Differ()
-        # print('    remote : ', remote_text)
-        # print('    diffBody : ', diffBody)
 
         # リポジトリ上のファイルと差分のスニペットをそれぞれ行単位で分割したリストにする
         a_lines = remote_text.splitlines(keepends=False)
@@ -363,18 +324,7 @@ def matchSnippetCode(fileUri, diffBody):
         return ""
     except Exception as e:
         print(f'Error get file {fileUri}: {e}')
-        return ""
-    
-    #matchSnippet = None
-    # 一致箇所を抽出
-    #for data in output_diff :
-    #    if data[0:1] not in ['+', '-', '?'] :
-            # 一致した行をmatchSnippetに追加
-    #        if matchSnippet is None:
-    #            matchSnippet = {"match": []}
-    #        matchSnippet["match"].append(data[2:])
-            # リストではなく一つの項目にまとめる場合は下記のコメントを外し、matchSnippetを文字列に変更
-            # matchSnippet += data[2:] + '\n'
+        return ""    
 
     matchSnippet = {"match": []}
     # 一致部分のソースコードを途中が一致しなくてももれなく抽出
@@ -406,18 +356,11 @@ def matchSnippetCode(fileUri, diffBody):
     # 一致行が全くなかった場合は空リストを返す
     if first_match_index is None:
         print("No match repository and snippet.")
-        return None, None, []
+        return []
+        #return None, None, []
 
-    #print(f"source :", fileUri)
-    #print(f"source :", remote_text)
-    #print(f"snippet : ", diffBody)
-    # print("difflist :", difflist)
-    # print(f"match : %s - %s", first_match_index, last_match_index)
-    # extracted = b_lines[first_match_index:last_match_index+1]
-
-    return first_match_index, last_match_index, matchSnippet
-
-    # return matchSnippet
+    #return first_match_index, last_match_index, matchSnippet
+    return matchSnippet
 
 # --- main ---
 def main(args):
@@ -471,24 +414,11 @@ def main(args):
             )
             print("  Skip empty diff for file", item['after'])
             continue   # 空のdiffはスキップ
-        #print("=====")
-        #print("file", item['after'])
-        #print("Code", data)
-
-        # Deserialize failed: code must be more than 110 characters.　を出力する場合のテスト用
-        # data = 'abcde'
 
         # Azure CLIの呼び出し
         strAzureResult = callAzureCLI(data)
-        #print('Azure CLI Result:', strAzureResult)
-
-        # json_str = '{"protectedMaterialAnalysis":{"detected":true,"codeCitations":[{"license":"Apache_2_0","sourceUrls":["https://github.com/laboroai/LaboroTVSpeech/tree/d2e8edb309f5c2a75165e38f391dafc4564a088b/kaldi%2Flaborotv%2Fs5%2Frun.sh"]}]}}'
         # JSONのtrueはPythonのTrueに変換される必要があるため、json.loadsで読み込む
         jsonAzureResult = json.loads(strAzureResult)
-        #print("=====")
-        #print(jsonAzureResult)
-        #print(type(jsonAzureResult))  # <class 'dict'>
-        #print("=====")
 
         # 結果をitemに追加
         # 'protectedMaterialAnalysis'キーが存在し、かつその中に'codeCitations'キーが存在し、さらに'codeCitations'リストが空でない場合
@@ -591,6 +521,3 @@ def main(args):
 if __name__ == "__main__":
 
     main(sys.argv[1:])  # command line params exclude command name
-
-
-
