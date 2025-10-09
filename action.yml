@@ -97,11 +97,15 @@ runs:
            -e AACS=${{ inputs.AACS }} \
            -e AACSAPIkey=${{ inputs.AACSAPIKEY }} \
            -e HUGGINGFACE_TOKEN=${{ inputs.HUGGINGFACE_TOKEN }} \
-           -v ${{ github.workspace }}:/app \
-           -w /app \
+           -v ${{ github.workspace }}:/workspace \
+           -w /workspace \
            ghcr.io/${{ github.repository_owner }}/ghcr-ccc-container:latest \
-           bash -c "git config --global --add safe.directory /app && python3 gitDiffCheck.py ${{ inputs.pr_number }}"
+           bash -c "git config --global --add safe.directory /workspace && python3 /app/gitDiffCheck.py ${{ inputs.pr_number }}"
 
+#          -v ${{ github.workspace }}:/app \
+#          -w /app \
+#          bash -c "git config --global --add safe.directory /app && python3 gitDiffCheck.py ${{ inputs.pr_number }}"
+    
     # Python スクリプトを PR 番号付きで実行
     #- name: Run Python script with PR number
     #  shell: bash
