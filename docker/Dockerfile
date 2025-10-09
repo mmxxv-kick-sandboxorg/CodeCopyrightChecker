@@ -16,8 +16,3 @@ WORKDIR /app
 COPY scripts/gitDiffCheck.py /app/gitDiffCheck.py
 
 CMD ["python3", "gitDiffCheck.py"]
-
-
-
-
-
