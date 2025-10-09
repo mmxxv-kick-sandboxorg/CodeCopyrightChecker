@@ -6,14 +6,19 @@ RUN apt-get update && apt-get install -y \
     python3 python3-pip git curl gh && \
     rm -rf /var/lib/apt/lists/*
 
+# copy requirements first for better caching
+COPY requirements.txt /app/requirements.txt
+
 # Hugging Face Transformers and dependency package install
-RUN pip3 install --no-cache-dir transformers torch accelerate
+RUN pip3 install --no-cache-dir -r /app/requirements.txt
+# RUN pip3 install --no-cache-dir transformers torch accelerate
 
 # work directory
 WORKDIR /app
 
 # copy check script to container
-# COPY scripts/gitDiffCheck.py /app/gitDiffCheck.py
+COPY scripts/gitDiffCheck.py /app/gitDiffCheck.py
 
 CMD ["python3", "gitDiffCheck.py"]
+
 
