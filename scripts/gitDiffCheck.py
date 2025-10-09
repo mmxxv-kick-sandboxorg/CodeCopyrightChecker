@@ -356,11 +356,10 @@ def matchSnippetCode(fileUri, diffBody):
     # 一致行が全くなかった場合は空リストを返す
     if first_match_index is None:
         print("No match repository and snippet.")
-        return []
-        #return None, None, []
+        return None, None, []
 
-    #return first_match_index, last_match_index, matchSnippet
-    return matchSnippet
+    return first_match_index, last_match_index, matchSnippet
+    #return matchSnippet
 
 # --- main ---
 def main(args):
@@ -521,3 +520,4 @@ def main(args):
 if __name__ == "__main__":
 
     main(sys.argv[1:])  # command line params exclude command name
+
