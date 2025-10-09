@@ -1,4 +1,5 @@
 # CodeCopyRightChecker/action.yml
+# Unpublished Copyright (c) 2025 NTT, Inc. All rights reserved.
 name: 'Copyright Check'
 description: 'Check copyright infringement in pull requests using Azure Content Safety API'
 
