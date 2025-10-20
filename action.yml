@@ -24,12 +24,9 @@ inputs:
     description: 'Azure Content Safety API key'
     required: true
 
-#env:
-#  REGISTRY: ghcr.io
-#  IMAGE_NAME: CodeCopyrightChecker
-
 runs:
   using: "composite" 
+  runs-on: ubuntu-latest
   steps:
     # 呼び出し元のリポジトリをチェックアウト（PR差分取得のため）
     - name: Checkout caller repository
@@ -38,11 +35,6 @@ runs:
     # Set up Docker environment
     - name: "2. enable docker buildx"
       uses: docker/setup-buildx-action@v3
-    # Python 環境をセットアップ
-    #- name: Set up Python
-    #  uses: actions/setup-python@v5
-    #  with:
-    #    python-version: ${{ inputs.python_version }}
 
     # Log in GitHub Container Registry
     - name: "3. login ghcr.io"
