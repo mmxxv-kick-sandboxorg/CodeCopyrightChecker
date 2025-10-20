@@ -57,7 +57,7 @@ runs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ghcr.io/${{ github.repository_owner }}/ghcr-ccc-container
+        images: ghcr.io/${{ fromJSON('"${{ github.repository_owner }}"') | downcase }}/ghcr-ccc-container
         # images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
           type=raw,value=latest
@@ -74,8 +74,8 @@ runs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/ghcr-ccc-container:buildcache
-        cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/ghcr-ccc-container:buildcache,mode=max
+        cache-from: type=registry,ref=ghcr.io/${{ fromJSON('"${{ github.repository_owner }}"') | downcase }}/ghcr-ccc-container:buildcache
+        cache-to: type=registry,ref=ghcr.io/${{ fromJSON('"${{ github.repository_owner }}"') | downcase }}/ghcr-ccc-container:buildcache,mode=max
         #cache-from: type=registry,ref=ghcr.io/CodeCopyrightChecker/ghcr-ccc-container:buildcache
         #cache-to: type=registry,ref=ghcr.io/CodeCopyrightChecker/ghcr-ccc-container:buildcache,mode=max
 
@@ -100,7 +100,7 @@ runs:
            -e HUGGINGFACE_TOKEN=${{ inputs.HUGGINGFACE_TOKEN }} \
            -v ${{ github.workspace }}:/workspace \
            -w /workspace \
-           ghcr.io/${{ github.repository_owner }}/ghcr-ccc-container:latest \
+           ghcr.io/${{ fromJSON('"${{ github.repository_owner }}"') | downcase }}/ghcr-ccc-container:latest \
            bash -c "git config --global --add safe.directory /workspace && python3 /app/gitDiffCheck.py ${{ inputs.pr_number }}"
 
 #          -v ${{ github.workspace }}:/app \
