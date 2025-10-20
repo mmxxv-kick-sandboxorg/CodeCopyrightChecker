@@ -50,15 +50,16 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        # password: ${{ secrets.CR_PAT }}
         password: ${{ inputs.GH_TOKEN }}
+
+    - name: "3.1. set lowercase owner for GHCR"
+      run: echo "OWNER_LOWER=$(echo $GITHUB_ACTOR | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
     - name: "4. generate metadata"
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ghcr.io/${{ fromJSON('"${{ github.repository_owner }}"') | downcase }}/ghcr-ccc-container
-        # images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        images: ghcr.io/${{ env.OWNER_LOWER }}/ghcr-ccc-container
         tags: |
           type=raw,value=latest
           type=sha,prefix=,suffix=,format=short
@@ -67,22 +68,12 @@ runs:
       uses: docker/build-push-action@v5
       with:
         context: ${{ github.action_path }}
-        # context: .
-        # user側のrepoに配置する場合は . とする
-        # file: ./docker/Dockerfile
         file: ${{ github.action_path }}/docker/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=registry,ref=ghcr.io/${{ fromJSON('"${{ github.repository_owner }}"') | downcase }}/ghcr-ccc-container:buildcache
-        cache-to: type=registry,ref=ghcr.io/${{ fromJSON('"${{ github.repository_owner }}"') | downcase }}/ghcr-ccc-container:buildcache,mode=max
-        #cache-from: type=registry,ref=ghcr.io/CodeCopyrightChecker/ghcr-ccc-container:buildcache
-        #cache-to: type=registry,ref=ghcr.io/CodeCopyrightChecker/ghcr-ccc-container:buildcache,mode=max
-
-    # 依存ライブラリをインストール
-    #- name: Install dependencies
-    #  shell: bash
-    #  run: pip install --prefer-binary --use-feature=fast-deps -r ${{ github.action_path }}/requirements.txt
+        cache-from: type=registry,ref=ghcr.io/${{ env.OWNER_LOWER }}/ghcr-ccc-container:buildcache
+        cache-to: type=registry,ref=ghcr.io/${{ env.OWNER_LOWER }}/ghcr-ccc-container:buildcache,mode=max
 
     - name: "6. run gitDiffCheck.py with PR number"
       shell: bash
@@ -100,21 +91,5 @@ runs:
            -e HUGGINGFACE_TOKEN=${{ inputs.HUGGINGFACE_TOKEN }} \
            -v ${{ github.workspace }}:/workspace \
            -w /workspace \
-           ghcr.io/${{ fromJSON('"${{ github.repository_owner }}"') | downcase }}/ghcr-ccc-container:latest \
+           ghcr.io/${{ env.OWNER_LOWER }}/ghcr-ccc-container:latest \
            bash -c "git config --global --add safe.directory /workspace && python3 /app/gitDiffCheck.py ${{ inputs.pr_number }}"
-
-#          -v ${{ github.workspace }}:/app \
-#          -w /app \
-#          bash -c "git config --global --add safe.directory /app && python3 gitDiffCheck.py ${{ inputs.pr_number }}"
-    
-    # Python スクリプトを PR 番号付きで実行
-    #- name: Run Python script with PR number
-    #  shell: bash
-    #  env:
-    #    GH_TOKEN: ${{ inputs.GH_TOKEN }}
-    #    HUGGINGFACE_TOKEN: ${{ inputs.HUGGINGFACE_TOKEN }}
-    #    AACS: ${{ inputs.AACS }}
-    #    AACSAPIkey: ${{ inputs.AACSAPIkey }}
-    #    PYTHONIOENCODING: utf-8
-    #  run: |
-    #    python ${{ github.action_path }}/scripts/gitDiffCheck.py ${{ inputs.pr_number }}
