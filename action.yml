@@ -45,6 +45,7 @@ runs:
         password: ${{ inputs.GH_TOKEN }}
 
     - name: "3.1. set lowercase owner for GHCR"
+      shell: bash
       run: echo "OWNER_LOWER=$(echo $GITHUB_ACTOR | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
     - name: "4. generate metadata"
