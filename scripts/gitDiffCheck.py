@@ -159,7 +159,7 @@ def callGitHubCLIdiff(strCmd):
             print('ERROR : undefined result has returned from GitHub CLI(diff).', procObj.stderr)
             exit(1)
     except:
-        print('ERROR has occured executing GitHub CLI(diff).')
+        print('ERROR has occured executing GitHub CLI(diff).', e)
         exit(1)
 
     # 結果を格納するリストの初期化
@@ -168,6 +168,7 @@ def callGitHubCLIdiff(strCmd):
     # 行ごとに処理
     lines = procObj.stdout.splitlines()
     current_diff = None
+    line_number = 0  # 行番号カウンタ
 
     # ルール
     # 'diff --git 'で始まる場合、半角スペースで区切られた続く要素を"before" "after"として取得
@@ -186,9 +187,15 @@ def callGitHubCLIdiff(strCmd):
                 "after": parts[3].split("/")[-1],
                 "diff": []
             }
+            line_number = 0  # 行番号をリセット
         # '@@'で始まる行を処理
         elif line.startswith('@@'):
-            continue  # @@行は無視
+            # 増分行算出のための数値を取得
+            # 例: @@ -8,6 +8,27 @@ から +8 の部分を抽出
+            import re
+            match = re.search(r'\+(\d+)', line)
+            if match:
+                line_number = int(match.group(1))
         # '\ No newline at end of file'が出現した場合、現在のdiffを確定
         elif line == '\\ No newline at end of file':
             if current_diff is not None:
@@ -201,7 +208,16 @@ def callGitHubCLIdiff(strCmd):
             if line.startswith('+++') or line.startswith('---'):
                 continue  # '+++'または'---'で始まる行は無視
             elif line.startswith('+'):
-                current_diff["diff"].append(line[1:])  # '+'を取り除く
+                current_diff["diff"].append({
+                    "content": line[1:],  # '+'を取り除く
+                    "line_number": line_number
+                })
+                line_number += 1  # '+'行の場合は行番号をインクリメント
+            elif line.startswith(' '):
+                line_number += 1  # ' '行の場合も行番号をインクリメント
+            elif line.startswith('-'):
+                # '-'行は行番号をインクリメントしない（削除行なので）
+                pass
 
     # 最後のdiffが残っている場合は結果に追加
     if current_diff is not None:
@@ -286,12 +302,13 @@ def callGitHubCLIcomment(prNumber, comment):
 
     return True
 
-def matchSnippetCode(fileUri, diffBody):
+def matchSnippetCode(fileUri, diffBody, diffElements):
     """差分のコードスニペットとリポジトリ上のファイルとの一致部分を探す
 
     Args:
         fileUri: ファイル名(URI)
         diffBody: 差分のコードスニペット
+        diffElements: diff要素のリスト（content と line_number を含む辞書のリスト）
 
     Returns:
         matchSnippet: 一致したコードスニペット（見つからなかった場合は空リスト）
@@ -312,8 +329,15 @@ def matchSnippetCode(fileUri, diffBody):
         b_lines = diffBody.splitlines(keepends=False)
         difflist = list(diff.compare(a_lines, b_lines))
 
+        # line_numberのマッピングを作成（従来の文字列形式との互換性を保つ）
+        line_number_map = {}
+        if diffElements and isinstance(diffElements[0], dict):
+            for i, elem in enumerate(diffElements):
+                line_number_map[i] = elem['line_number']
+
         first_match_index = None
         last_match_index = None
+        matched_line_numbers = []  # マッチした行番号を記録
 
         b_line_num = 0  # b_linesの行番号カウンタ
 
@@ -336,8 +360,16 @@ def matchSnippetCode(fileUri, diffBody):
         if code == '  ':  # 一致行
             if first_match_index is None:
                 first_match_index = b_line_num
+            
+            # line_number情報を取得
+            line_number = line_number_map.get(b_line_num, b_line_num + 1)  # デフォルトは1ベースの行番号
+            matched_line_numbers.append(line_number)
+            
             #print( f"match : %s ", line)
-            matchSnippet["match"].append(text)
+            matchSnippet["match"].append({
+                "content": text,
+                "line_number": line_number
+            })
             last_match_index = b_line_num
             b_line_num += 1
         elif code == '- ':  # aにだけある行
@@ -347,7 +379,14 @@ def matchSnippetCode(fileUri, diffBody):
             if first_match_index is None:
                 pass
             else:
-                matchSnippet["match"].append(text)
+                # line_number情報を取得
+                line_number = line_number_map.get(b_line_num, b_line_num + 1)  # デフォルトは1ベースの行番号
+                matched_line_numbers.append(line_number)
+                
+                matchSnippet["match"].append({
+                    "content": text,
+                    "line_number": line_number
+                })
             b_line_num += 1
         elif code == '? ':
             # 差分の詳細行は無視
@@ -358,8 +397,16 @@ def matchSnippetCode(fileUri, diffBody):
         print("No match repository and snippet.")
         return None, None, []
 
-    return first_match_index, last_match_index, matchSnippet
-    #return matchSnippet
+    # マッチした行番号の最小値と最大値を計算
+    if matched_line_numbers:
+        first_match_line_number = min(matched_line_numbers)
+        last_match_line_number = max(matched_line_numbers)
+    else:
+        first_match_line_number = first_match_index
+        last_match_line_number = last_match_index
+
+    return first_match_line_number, last_match_line_number, matchSnippet
+
 
 # --- main ---
 def main(args):
@@ -401,7 +448,11 @@ def main(args):
     # strResultに対して1件ずつ処理
     for item in strResult:
         dataset = item['diff']
-        data = ''.join(dataset)  # リストを文字列に変換
+        # diff要素から文字列を抽出（content部分のみ）
+        if dataset and isinstance(dataset[0], dict):
+            data = '\n'.join([d['content'] for d in dataset])  # 辞書形式の場合
+        else:
+            data = ''.join(dataset)  # 従来の文字列形式の場合（後方互換性）
         if data == "":
             # 空のdiff(削除だけの差分)の場合、APIを呼び出さずにスキップ
             item.update(
@@ -433,6 +484,17 @@ def main(args):
             # If max_k_percent_prob < threshold, return False (likely Protectable Expression)
             is_commonplace_expression = max_k_percent_prob >= config["thr"]
 
+            # matchSnippetCodeを先に実行して行番号情報を取得
+            # diff要素から文字列を抽出（content部分のみ）
+            if dataset and isinstance(dataset[0], dict):
+                testSnippet = '\n'.join([d['content'] for d in dataset])  # 辞書形式の場合
+            else:
+                testSnippet = '\n'.join(dataset)  # 従来の文字列形式の場合（後方互換性）
+
+            matchCode = None
+            first_match_line_number = None
+            last_match_line_number = None
+            
             # 'codeCitations'が存在し、かつ空でない場合、'detected', 'license', 'sourceUrls'の値を追加
             item.update(
                 {
@@ -444,28 +506,11 @@ def main(args):
                 }
             )
 
-            # callGitHubCLIcomment でプルリクエストにコメントを追加
-            # ToDo: コメントに改行を含める
-            commentPartCR = " "
-            if is_commonplace_expression:
-                #comment = strGitCommentHeader + f"Even though similar public code snippet was detected in file {item['after']}, it was COMMONPLACE EXPRESSION!!!" + commentPartCR + f"License: {item['license']}." + commentPartCR + f"Source URLs: {', '.join(item['sourceUrls'])}"
-                comment = strGitCommentHeader + f"Similar public code snippet was detected in file {item['after']}." + commentPartCR + f"   License: {item['license']}." + commentPartCR + f"   [COMMONPLACE EXPRESSION] MAX-K% PROB = {max_k_percent_prob}   Thr = {config['thr']}"
-            else:
-                #comment = strGitCommentHeader + f"Similar public code snippet was detected in file {item['after']}." + commentPartCR + f"License: {item['license']}." + commentPartCR + f"Source URLs: {', '.join(item['sourceUrls'])}"
-                comment = strGitCommentHeader + f"Similar public code snippet was detected in file {item['after']}." + commentPartCR + f"   License: {item['license']}." + commentPartCR + f"   [COPYRIGHTABLE EXPRESSION] MAX-K% PROB = {max_k_percent_prob}   Thr = {config['thr']}"
-            # print('Comment:', comment)
-            if callGitHubCLIcomment(pullId, comment):
-                print('  Comment added to Pull-request ID', pullId)
-            
-            # 58 BEGIN
-            testSnippet = '\n'.join(dataset)  # Code snippet of the diff
-
-            matchCode = None
             for originUri in item['sourceUrls']:
                 # Convert originUri to rawUri
                 targetUri = originUri.replace("github.com/", "raw.githubusercontent.com/").replace("/tree/", "/").replace("%2F", "/")
 
-                result = matchSnippetCode(targetUri, testSnippet)
+                result = matchSnippetCode(targetUri, testSnippet, dataset)
 
                 # If 404 occurs, matchSnippetCode returns an empty string "", so skip to the next URL
                 if result == "":
@@ -479,6 +524,8 @@ def main(args):
                 stline, edline, matchCode = result
                 if matchCode:
                     # If a match is found, break the loop
+                    first_match_line_number = stline
+                    last_match_line_number = edline
                     break
 
             # If matchCode is None or an empty list, set matchSnippet to an empty list
@@ -486,7 +533,26 @@ def main(args):
                 item.update({"matchSnippet": []})
             else:
                 item.update({"matchSnippet": matchCode["match"]})
-            # 58 END
+
+            # callGitHubCLIcomment でプルリクエストにコメントを追加
+            # 行番号情報を含めたコメントを作成
+            commentPartCR = " "
+            line_info = ""
+            if first_match_line_number is not None and last_match_line_number is not None:
+                if first_match_line_number == last_match_line_number:
+                    line_info = f" (Line: {first_match_line_number})"
+                else:
+                    line_info = f" (Lines: {first_match_line_number}-{last_match_line_number})"
+            
+            if is_commonplace_expression:
+                #comment = strGitCommentHeader + f"Even though similar public code snippet was detected in file {item['after']}, it was COMMONPLACE EXPRESSION!!!" + commentPartCR + f"License: {item['license']}." + commentPartCR + f"Source URLs: {', '.join(item['sourceUrls'])}"
+                comment = strGitCommentHeader + f"Similar public code snippet was detected in file {item['after']}{line_info}." + commentPartCR + f"   License: {item['license']}." + commentPartCR + f"   [COMMONPLACE EXPRESSION] MAX-K% PROB = {max_k_percent_prob}   Thr = {config['thr']}"
+            else:
+                #comment = strGitCommentHeader + f"Similar public code snippet was detected in file {item['after']}." + commentPartCR + f"License: {item['license']}." + commentPartCR + f"Source URLs: {', '.join(item['sourceUrls'])}"
+                comment = strGitCommentHeader + f"Similar public code snippet was detected in file {item['after']}{line_info}." + commentPartCR + f"   License: {item['license']}." + commentPartCR + f"   [COPYRIGHTABLE EXPRESSION] MAX-K% PROB = {max_k_percent_prob}   Thr = {config['thr']}"
+            # print('Comment:', comment)
+            if callGitHubCLIcomment(pullId, comment):
+                print('  Comment added to Pull-request ID', pullId)
 
         else:
             # チェック結果が false
@@ -506,7 +572,6 @@ def main(args):
                 }
             )
 
-
     # output JSON format
     print(strResult)
     print('check completed.')
@@ -520,4 +585,3 @@ def main(args):
 if __name__ == "__main__":
 
     main(sys.argv[1:])  # command line params exclude command name
-
