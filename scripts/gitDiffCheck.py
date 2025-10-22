@@ -441,6 +441,26 @@ def main(args):
         print('ERROR:指定された差分が取得できません。Pull-request IDを確認してください')
         exit(1)
 
+    # match line number info init
+    first_match_line_number = None
+    last_match_line_number = None
+    
+    # callGitHubCLIdiff()で取得したdiff要素の最初と最後のline_numberを取得
+    # 全てのファイルのdiff要素から最初と最後の行番号を見つける
+    all_line_numbers = []
+    for item in strResult:
+        if item['diff'] and isinstance(item['diff'][0], dict):
+            for diff_elem in item['diff']:
+                if 'line_number' in diff_elem:
+                    all_line_numbers.append(diff_elem['line_number'])
+    
+    if all_line_numbers:
+        first_match_line_number = min(all_line_numbers)
+        last_match_line_number = max(all_line_numbers)
+    
+    # debug print
+    print(f"First match line number: {first_match_line_number}, Last match line number: {last_match_line_number}")
+
     model, tokenizer = load_model("Qwen/Qwen2.5-Coder-0.5B")
 
     # 結果情報の初期化
@@ -491,10 +511,6 @@ def main(args):
             else:
                 testSnippet = '\n'.join(dataset)  # 従来の文字列形式の場合（後方互換性）
 
-            matchCode = None
-            first_match_line_number = None
-            last_match_line_number = None
-            
             # 'codeCitations'が存在し、かつ空でない場合、'detected', 'license', 'sourceUrls'の値を追加
             item.update(
                 {
@@ -506,6 +522,8 @@ def main(args):
                 }
             )
 
+            # intialize matchCode
+            matchCode = None
             for originUri in item['sourceUrls']:
                 # Convert originUri to rawUri
                 targetUri = originUri.replace("github.com/", "raw.githubusercontent.com/").replace("/tree/", "/").replace("%2F", "/")
